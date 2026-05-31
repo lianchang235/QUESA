@@ -1,0 +1,18 @@
+# Keil 编译输出
+Objects/
+Listings/
+Debug/
+Release/
+
+# Keil 个人配置
+*.uvoptx
+*.uvguix.*
+*.d
+*.crf
+*.lnp
+*.htm
+
+# 临时文件
+*.bak
+*.tmp
+*.old
