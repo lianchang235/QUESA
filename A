@@ -1,0 +1,52 @@
+import serial
+import struct
+
+PORT = "COM5"
+BAUD = 115200
+FRAME_LEN = 55
+
+ser = serial.Serial(PORT, BAUD, timeout=1)
+
+def checksum(data):
+    return sum(data) & 0xFF
+
+buf = bytearray()
+
+while True:
+    data = ser.read(128)
+    if len(data) == 0:
+        print("no data")
+    else:
+        print(len(data), data)
+    if data:
+        buf.extend(data)
+
+    while len(buf) >= FRAME_LEN:
+        if buf[0] != 0xAF or buf[1] != 0xFA:
+            buf.pop(0)
+            continue
+
+        frame = buf[:FRAME_LEN]
+
+        if checksum(frame[:FRAME_LEN - 1]) != frame[FRAME_LEN - 1]:
+            buf.pop(0)
+            continue
+
+        current = struct.unpack('<f', frame[2:6])[0]
+        voltage = struct.unpack('<f', frame[6:10])[0]
+        power   = struct.unpack('<f', frame[10:14])[0]
+
+        thrust = struct.unpack('<ffff', frame[14:30])
+        duty   = struct.unpack('<ffff', frame[30:46])
+        pwm    = struct.unpack('<HHHH', frame[46:54])
+
+        print(
+            f"T1={thrust[0]:.2f}N D1={duty[0]:.3f}% PWM1={pwm[0]} | "
+            f"T2={thrust[1]:.2f}N D2={duty[1]:.3f}% PWM2={pwm[1]} | "
+            f"T3={thrust[2]:.2f}N D3={duty[2]:.3f}% PWM3={pwm[2]} | "
+            f"T4={thrust[3]:.2f}N D4={duty[3]:.3f}% PWM4={pwm[3]} | "
+            f"I={current:.3f}A V={voltage:.3f}V P={power:.3f}W"
+        )
+
+
+        del buf[:FRAME_LEN]
